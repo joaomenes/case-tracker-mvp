@@ -38,7 +38,7 @@
 O **Case Tracker** é uma aplicação local para organizar e acompanhar cases de sustentação, lembretes, macros, anotações e consultas SQL. O sistema roda no navegador por meio de um servidor local em `localhost:8765` e mantém os dados operacionais no **IndexedDB** do perfil do navegador.
 
 > [!IMPORTANT]
-> O Case Tracker  funciona como ferramenta pessoal de acompanhamento e apoio operacional.
+> O Case Tracker funciona como ferramenta pessoal de acompanhamento e apoio operacional.
 
 ---
 
@@ -312,7 +312,6 @@ Ao contribuir ou modificar o projeto:
 2. mantenha o acesso ao IndexedDB em `src/db.js`;
 3. preserve o fuso `America/Sao_Paulo` nas regras de agenda;
 4. atualize `CACHE_NAME` em `sw.js` quando houver alteração de assets em uma nova release;
-5. não inclua dados reais de atendimento em commits, screenshots ou issues públicas.
 
 <p align="center">
   <strong>Case Tracker</strong><br>
