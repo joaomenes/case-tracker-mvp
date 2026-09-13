@@ -1,0 +1,20 @@
+# Dados gerados em runtime / dados do usuário
+Backups/
+DadosInternos/
+Logs/
+
+# Arquivos temporários e logs
+*.log
+*.tmp
+*.bak
+*.swp
+~$*
+
+# Sistema operacional / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Pacotes locais de distribuição
+*.zip

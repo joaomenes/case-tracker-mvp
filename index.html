@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#172a3a">
+  <meta name="description" content="Acompanhamento local de cases, prioridades e lembretes de atendimento.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <script src="./theme-init.js"></script>
+  <link rel="stylesheet" href="./styles-v1.9.0-RC4.7.css">
+  <title>Acompanhamento de Cases</title>
+</head>
+<body>
+  <div class="app-shell">
+    <aside id="sidebar" class="sidebar" aria-label="Navegação principal">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">C</div>
+        <div class="brand-copy">
+          <strong>Case Tracker</strong>
+          <span>Acompanhamento local</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item ativo" type="button" data-view="painel" aria-current="page">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-16v5h6V4h-6Z"/></svg>
+          <span>Painel</span>
+        </button>
+        <button class="nav-item" type="button" data-view="cases">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v4H4V5Zm0 5.5h16v4H4v-4ZM4 16h16v3H4v-3Z"/></svg>
+          <span>Cases</span>
+        </button>
+        <button class="nav-item" type="button" data-view="lembretes">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22a2.5 2.5 0 0 0 2.35-1.65h-4.7A2.5 2.5 0 0 0 12 22Zm7-5.5-1.6-2V9a5.4 5.4 0 0 0-4.4-5.3V3a1 1 0 0 0-2 0v.7A5.4 5.4 0 0 0 6.6 9v5.5l-1.6 2V18h14v-1.5Z"/></svg>
+          <span>Lembretes</span>
+        </button>
+        <button class="nav-item" type="button" data-view="gmud">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v4H4V4Zm0 6h10v4H4v-4Zm0 6h16v4H4v-4Zm13-6 3 3-3 3v-2h-2v-2h2v-2Z"/></svg>
+          <span>GMUD</span>
+        </button>
+        <button class="nav-item" type="button" data-view="historico">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 1-8.3 5.5L2 7h5v5L5.2 10.2A7 7 0 1 0 12 5v2l4-3-4-3v2Zm-1 4h2v5.2l3.2 1.8-1 1.7-4.2-2.4V7Z"/></svg>
+          <span>Histórico</span>
+        </button>
+        <button class="nav-item nav-item-with-badge" type="button" data-view="rascunhos">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H7l-3 3V4Zm4 3v2h8V7H8Zm0 4v2h6v-2H8Z"/></svg>
+          <span>Rascunhos</span>
+          <span id="badgeRascunhosMenu" class="nav-badge" hidden>0</span>
+        </button>
+        <button id="btnModelos" class="nav-item" type="button" data-view="macros">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H9l-5 3v-3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h1Zm1 5h11V6H6v2Zm0 4h8v-2H6v2Zm0 4h10v-2H6v2Z"/></svg>
+          <span>Macros</span>
+        </button>
+        <button class="nav-item" type="button" data-view="anotacoes">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5V3Zm9 2v4h4M8 12h8v2H8v-2Zm0 4h8v2H8v-2Zm0-8h4v2H8V8Z"/></svg>
+          <span>Anotações</span>
+        </button>
+        <button class="nav-item" type="button" data-view="queries">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v4H4V4Zm0 6h16v10H4V10Zm2 2v6h12v-6H6Zm1 1h4v2H7v-2Z"/></svg>
+          <span>Queries SQL</span>
+        </button>
+        <button class="nav-item" type="button" data-view="lixeira">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4V2h8v2h5v2h-2l-1 15H6L5 6H3V4h5Zm0 2 1 13h6l1-13H8Zm2 2h2v9h-2V8Zm4 0h2v9h-2V8Z"/></svg>
+          <span>Lixeira</span>
+        </button>
+        <button class="nav-item" type="button" data-view="backup">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.2l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6V3h2ZM4 19h16v2H4v-2Z"/></svg>
+          <span>Backup</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="nav-item" type="button" data-view="configuracoes">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m19.4 13 .1-1-.1-1 2-1.6-2-3.4-2.5 1a8 8 0 0 0-1.7-1L14.8 3h-4l-.4 3a8 8 0 0 0-1.7 1L6.2 6 4.2 9.4l2 1.6-.1 1 .1 1-2 1.6 2 3.4 2.5-1a8 8 0 0 0 1.7 1l.4 3h4l.4-3a8 8 0 0 0 1.7-1l2.5 1 2-3.4-2-1.6ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z"/></svg>
+          <span>Configurações</span>
+        </button>
+        <button id="btnEncerrarApp" class="nav-item nav-item-danger" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 2h2v10h-2V2Zm1 20a9 9 0 0 1-6.36-15.36l1.42 1.42A7 7 0 1 0 16.94 8.06l1.42-1.42A9 9 0 0 1 12 22Z"/></svg>
+          <span>Encerrar</span>
+        </button>
+        <div class="sidebar-version">Versão <span id="versaoSidebar">1.9.0-RC4.7</span></div>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="workspace-header">
+        <div class="workspace-heading">
+          <button id="btnMenu" class="menu-mobile" type="button" aria-label="Abrir menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h16v2H4v-2Z"/></svg>
+          </button>
+          <div>
+            <h1 id="pageTitle">Acompanhamento de Cases</h1>
+            <p id="pageSubtitle">Visão geral dos atendimentos e lembretes do dia.</p>
+          </div>
+        </div>
+        <button id="btnPesquisaGlobal" class="global-search-trigger" type="button" aria-label="Abrir pesquisa global">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.7 19.3-4.2-4.2a7 7 0 1 0-1.4 1.4l4.2 4.2 1.4-1.4ZM5 10.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0Z"/></svg>
+          <span>Pesquisar tudo</span><kbd>Ctrl K</kbd>
+        </button>
+        <div class="workspace-actions">
+          <button id="btnNotificacao" class="notification-status" type="button">
+            <span class="notification-dot" aria-hidden="true"></span>
+            <span id="textoStatusNotificacao">Notificações</span>
+          </button>
+          <button id="btnNovo" class="primary-action" type="button">
+            <span aria-hidden="true">+</span> Novo case
+          </button>
+        </div>
+      </header>
+
+      <main class="content-area">
+        <section id="viewPrincipal" class="view-section">
+          <section id="alertaNotificacao" class="alerta-notificacao" aria-live="polite" hidden>
+            <div class="alert-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 22a2.5 2.5 0 0 0 2.35-1.65h-4.7A2.5 2.5 0 0 0 12 22Zm7-5.5-1.6-2V9a5.4 5.4 0 0 0-4.4-5.3V3a1 1 0 0 0-2 0v.7A5.4 5.4 0 0 0 6.6 9v5.5l-1.6 2V18h14v-1.5Z"/></svg>
+            </div>
+            <div class="alert-copy">
+              <strong>Ative os lembretes do navegador</strong>
+              <span id="alertaNotificacaoTexto"></span>
+            </div>
+            <button id="btnAtivarNotificacoesBanner" type="button" class="secondary-action">Permitir notificações</button>
+          </section>
+
+          <section id="cardsResumo" class="metrics-grid" aria-label="Resumo">
+            <button id="metricAtrasados" type="button" class="metric-card metric-danger metric-action" aria-label="Ver lembretes atrasados">
+              <div class="metric-top"><span>Atrasados</span><span class="metric-symbol">!</span></div>
+              <strong id="qtdAtrasados">0</strong>
+              <small>Requer atenção</small>
+            </button>
+            <button id="metricHoje" type="button" class="metric-card metric-blue metric-action" aria-label="Ver lembretes de hoje">
+              <div class="metric-top"><span>Para hoje</span><span class="metric-symbol">●</span></div>
+              <strong id="qtdHoje">0</strong>
+              <small>Lembretes previstos</small>
+            </button>
+            <button id="metricPrioritarios" type="button" class="metric-card metric-warning metric-action" aria-label="Ver cases prioritários">
+              <div class="metric-top"><span>Prioritários</span><span class="metric-symbol">▲</span></div>
+              <strong id="qtdPrioritarios">0</strong>
+              <small>Alta ou crítica</small>
+            </button>
+            <button id="metricAtivos" type="button" class="metric-card metric-success metric-action" aria-label="Ver cases ativos">
+              <div class="metric-top"><span>Cases ativos</span><span class="metric-symbol">✓</span></div>
+              <strong id="qtdAtivos">0</strong>
+              <small>Em acompanhamento</small>
+            </button>
+          </section>
+
+          <section id="painelFavoritos" class="favorites-panel" aria-label="Favoritos">
+            <div class="section-heading-row favorites-heading">
+              <div><p class="eyebrow">Acesso rápido</p><h2>Favoritos</h2></div>
+              <span id="contadorFavoritos" class="count-badge">0 itens</span>
+            </div>
+            <div id="listaFavoritos" class="favorites-grid"></div>
+          </section>
+
+          <section id="toolbarFiltros" class="toolbar-card" aria-label="Pesquisa e filtros">
+            <div class="search-field">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.7 19.3-4.2-4.2a7 7 0 1 0-1.4 1.4l4.2 4.2 1.4-1.4ZM5 10.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0Z"/></svg>
+              <input id="filtroTexto" type="search" placeholder="Pesquisar protocolo ou título" aria-label="Pesquisar protocolo ou título">
+            </div>
+            <select id="filtroSituacao" aria-label="Filtrar por situação"><option value="">Todas as situações</option></select>
+            <select id="filtroPrioridade" aria-label="Filtrar por prioridade"><option value="">Todas as prioridades</option></select>
+            <select id="filtroEstado" aria-label="Filtrar por estado"><option value="ativos">Ativos</option><option value="finalizados">Finalizados</option><option value="todos">Todos</option></select>
+            <select id="filtroVencimento" aria-label="Filtrar por vencimento"><option value="todos">Qualquer vencimento</option><option value="atrasados">Atrasados</option><option value="hoje">Hoje</option><option value="sem">Sem lembrete aberto</option></select>
+          </section>
+
+          <div class="section-heading-row">
+            <div>
+              <p class="eyebrow" id="listaEyebrow">Acompanhamento</p>
+              <h2 id="listaTitulo">Cases em acompanhamento</h2>
+            </div>
+            <span id="contadorLista" class="count-badge">0 itens</span>
+          </div>
+          <section id="listaCases" class="lista-cases" aria-live="polite"></section>
+        </section>
+
+        <section id="viewBackup" class="view-section" hidden>
+          <div class="settings-grid">
+            <article class="settings-card">
+              <div class="settings-icon blue" aria-hidden="true">48h</div>
+              <div>
+                <h2>Backup automático</h2>
+                <p id="backupAutomaticoStatus">Verificando status...</p>
+                <small>O arquivo automático anterior é substituído, mantendo apenas a cópia automática mais recente.</small>
+              </div>
+            </article>
+            <article class="settings-card">
+              <div class="settings-icon purple" aria-hidden="true">5d</div>
+              <div>
+                <h2>Backup de macros</h2>
+                <p id="backupMacrosStatus">Verificando status...</p>
+                <small>As macros usam um histórico acumulativo. Alterações são consolidadas no mesmo arquivo a cada 5 dias, sem apagar o histórico anterior.</small>
+              </div>
+            </article>
+            <article class="settings-card">
+              <div class="settings-icon success" aria-hidden="true">5d</div>
+              <div>
+                <h2>Backup de anotações</h2>
+                <p id="backupAnotacoesStatus">Verificando status...</p>
+                <small>As anotações seguem a mesma regra das macros: histórico acumulativo em arquivo próprio, consolidado a cada 5 dias após alterações, sem apagar o histórico anterior. Imagens e PDFs não entram nesse JSON.</small>
+              </div>
+            </article>
+            <article class="settings-card settings-card-wide attachment-backup-card">
+              <div class="settings-icon blue" aria-hidden="true">IMG</div>
+              <div class="settings-content">
+                <h2>Backup de anexos</h2>
+                <p id="backupAnexosStatus">Verificando anexos locais...</p>
+                <small>Imagens e PDFs são salvos separadamente em <strong>Backups\Anexos</strong>. O Case Tracker mantém automaticamente somente os 3 backups completos mais recentes.</small>
+              </div>
+              <div class="inline-actions right-actions attachment-backup-actions">
+                <button id="btnBackupAnexos" type="button" class="secondary-action">Salvar anexos</button>
+                <button id="btnRestaurarAnexos" type="button" class="secondary-action">Restaurar último</button>
+              </div>
+            </article>
+            <article class="settings-card">
+              <div class="settings-icon blue" aria-hidden="true">↓</div>
+              <div>
+                <h2>Backup manual</h2>
+                <p>Salva uma nova cópia na pasta <strong>Backups\Manuais</strong>. Backups manuais com mais de 30 dias são removidos automaticamente.</p>
+                <small id="backupManualStatus">Verificando retenção dos backups manuais...</small>
+              </div>
+              <button id="btnBackup" type="button" class="primary-action">Salvar backup manual</button>
+            </article>
+            <article class="settings-card">
+              <div class="settings-icon neutral" aria-hidden="true">↧</div>
+              <div>
+                <h2>Baixar uma cópia</h2>
+                <p>Também é possível baixar um JSON pelo navegador para guardar em outro local autorizado.</p>
+              </div>
+              <button id="btnBaixarBackup" type="button" class="secondary-action">Baixar JSON</button>
+            </article>
+            <article class="settings-card">
+              <div class="settings-icon purple" aria-hidden="true">↥</div>
+              <div>
+                <h2>Restaurar backup</h2>
+                <p>Selecione um backup válido para mesclar com a base atual ou substituir todos os dados locais.</p>
+              </div>
+              <label class="secondary-action file-action" for="inputBackup">Selecionar arquivo</label>
+              <input id="inputBackup" type="file" accept="application/json,.json" hidden>
+            </article>
+            <article class="settings-card">
+              <div class="settings-icon success" aria-hidden="true">▣</div>
+              <div>
+                <h2>Pasta de backups</h2>
+                <p>Acesse rapidamente a pasta exclusiva de backups criada junto à instalação do Case Tracker.</p>
+              </div>
+              <button id="btnAbrirPastaBackups" type="button" class="secondary-action">Abrir pasta Backups</button>
+            </article>
+          </div>
+          <div class="info-panel">
+            <strong>Organização dos arquivos</strong>
+            <p><code>Backups\Automaticos</code> mantém a última cópia automática; <code>Backups\Manuais</code> guarda cópias manuais por até 30 dias; <code>Backups\Macros\macros-historico.json</code> mantém o histórico acumulativo das macros; <code>Backups\Anotacoes\anotacoes-historico.json</code> mantém, separadamente, o histórico acumulativo das anotações; e <code>Backups\Anexos</code> mantém somente os 3 backups completos mais recentes de imagens e PDFs.</p>
+            <p><strong>Política de retenção:</strong> backup geral automático: 1 cópia; backups manuais: 30 dias; backups de anexos: 3 cópias completas (cópias interrompidas são limpas após 24h); rascunhos: 1 dia; Lixeira: 7 dias; cases resolvidos: 15 dias. Os históricos de Macros e Anotações permanecem acumulativos, conforme a regra já definida.</p>
+            <p><strong>Anexos ativos:</strong> imagens e PDFs de uma anotação permanecem no IndexedDB enquanto a anotação existir. Ao mover a anotação para a Lixeira, os anexos permanecem durante os 7 dias de retenção e são apagados somente na exclusão definitiva/expiração da Lixeira. Essa regra é independente dos backups em <code>Backups\Anexos</code>.</p>
+          </div>
+        </section>
+
+        <section id="viewRascunhos" class="view-section" hidden>
+          <div class="section-heading-row notes-page-heading">
+            <div>
+              <p class="eyebrow">Recuperação rápida</p>
+              <h2>Rascunhos</h2>
+              <p class="section-description">Rascunhos locais de cases e anotações ficam disponíveis por até 1 dia.</p>
+            </div>
+          </div>
+          <section class="notes-toolbar" aria-label="Pesquisa de rascunhos">
+            <div class="search-field">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.7 19.3-4.2-4.2a7 7 0 1 0-1.4 1.4l4.2 4.2 1.4-1.4ZM5 10.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0Z"/></svg>
+              <input id="filtroRascunhos" type="search" placeholder="Pesquisar por protocolo, título ou conteúdo do rascunho" aria-label="Pesquisar rascunhos">
+            </div>
+            <span id="contadorRascunhos" class="count-badge">0 rascunhos</span>
+          </section>
+          <section id="listaRascunhos" class="notes-grid" aria-live="polite"></section>
+          <div class="info-panel notes-backup-info">
+            <strong>Retenção dos rascunhos</strong>
+            <p>Os rascunhos são salvos automaticamente apenas neste navegador e expiram após 1 dia sem edição. Eles não entram nos arquivos de backup.</p>
+          </div>
+        </section>
+
+        <section id="viewMacros" class="view-section" hidden>
+          <div class="section-heading-row macro-page-heading">
+            <div>
+              <p class="eyebrow">Comunicação</p>
+              <h2>Macros de mensagem</h2>
+              <p class="section-description">Mensagens reutilizáveis para copiar rapidamente durante os atendimentos.</p>
+            </div>
+            <button id="btnNovaMacro" type="button" class="primary-action"><span aria-hidden="true">+</span> Nova macro</button>
+          </div>
+          <section class="notes-toolbar macro-toolbar" aria-label="Pesquisa de macros">
+            <div class="search-field">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.7 19.3-4.2-4.2a7 7 0 1 0-1.4 1.4l4.2 4.2 1.4-1.4ZM5 10.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0Z"/></svg>
+              <input id="filtroMacros" type="search" placeholder="Pesquisar por título ou conteúdo da macro" aria-label="Pesquisar macros por título ou conteúdo">
+            </div>
+            <span id="contadorMacros" class="count-badge">0 macros</span>
+          </section>
+          <section id="listaModelos" class="macro-library-grid" aria-live="polite"></section>
+        </section>
+
+        <section id="viewAnotacoes" class="view-section" hidden>
+          <div class="section-heading-row notes-page-heading">
+            <div>
+              <p class="eyebrow">Base pessoal</p>
+              <h2>Anotações</h2>
+              <p class="section-description">Registre procedimentos, lembretes técnicos e referências para consultar durante o atendimento.</p>
+            </div>
+            <button id="btnNovaAnotacao" type="button" class="primary-action"><span aria-hidden="true">+</span> Nova anotação</button>
+          </div>
+          <section class="notes-toolbar" aria-label="Pesquisa de anotações">
+            <div class="search-field">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.7 19.3-4.2-4.2a7 7 0 1 0-1.4 1.4l4.2 4.2 1.4-1.4ZM5 10.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0Z"/></svg>
+              <input id="filtroAnotacoes" type="search" placeholder="Pesquisar por título, conteúdo ou palavra-chave" aria-label="Pesquisar anotações por título ou conteúdo">
+            </div>
+            <span id="contadorAnotacoes" class="count-badge">0 anotações</span>
+          </section>
+          <section id="listaAnotacoes" class="notes-grid" aria-live="polite"></section>
+          <div class="info-panel notes-backup-info">
+            <strong>Backup das anotações</strong>
+            <p>As anotações possuem um histórico acumulativo próprio em <code>Backups\Anotacoes\anotacoes-historico.json</code>. Após qualquer alteração, inicia-se um ciclo de 5 dias; ao final, as mudanças são acrescentadas ao mesmo arquivo sem apagar o histórico anterior. Imagens e PDFs permanecem localmente enquanto a anotação existir e não entram nesse JSON. O Backup de anexos mantém separadamente as 3 cópias completas mais recentes em <code>Backups\Anexos</code>.</p>
+          </div>
+        </section>
+
+        <section id="viewQueries" class="view-section" hidden>
+          <section class="notes-toolbar query-search-toolbar" aria-label="Pesquisa de queries SQL">
+            <div class="search-field">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.7 19.3-4.2-4.2a7 7 0 1 0-1.4 1.4l4.2 4.2 1.4-1.4ZM5 10.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0Z"/></svg>
+              <input id="filtroQueries" type="search" placeholder="Pesquisar por nome, descrição, SQL ou tag" aria-label="Pesquisar queries SQL">
+            </div>
+            <span id="contadorQueries" class="count-badge">0 queries</span>
+          </section>
+          <div class="query-layout">
+            <article class="settings-card query-editor-card">
+              <div>
+                <p class="eyebrow">Biblioteca SQL Server</p>
+                <h2>Salvar query</h2>
+                <p>Armazene a consulta e descreva em qual situação ela foi utilizada.</p>
+              </div>
+              <form id="formQuery" class="query-form">
+                <input id="queryId" type="hidden">
+                <label>Nome da query<input id="queryNome" required maxlength="500" placeholder="Ex.: Consultar lançamentos da serventia"></label>
+                <label>Descrição / situação de uso<textarea id="queryDescricao" rows="3" maxlength="20000" placeholder="Explique quando esta query deve ser utilizada"></textarea></label>
+                <label>Tags<input id="queryTags" maxlength="500" placeholder="Ex.: Financeiro, Certidão, Pesquisa"></label>
+                <label>Query SQL<textarea id="queryTexto" class="sql-editor" required rows="12" maxlength="100000" spellcheck="false" placeholder="SELECT ..."></textarea></label>
+                <label class="query-favorite-check"><input id="queryFavorita" type="checkbox"> <span>Marcar como favorita</span></label>
+                <div class="inline-actions right-actions">
+                  <button id="btnNovaQuery" type="button" class="secondary-action">Limpar</button>
+                  <button type="submit" class="primary-action">Salvar query</button>
+                </div>
+              </form>
+            </article>
+            <section class="query-list-column">
+              <div class="section-heading-row query-list-heading">
+                <div><p class="eyebrow">Consultas salvas</p><h2>Queries para copiar e reutilizar</h2></div>
+              </div>
+              <div id="listaQueries" class="query-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="viewLixeira" class="view-section" hidden>
+          <div class="section-heading-row trash-heading">
+            <div>
+              <p class="eyebrow">Recuperação</p>
+              <h2>Lixeira</h2>
+              <p class="section-description">Itens excluídos ficam disponíveis por 7 dias antes da remoção definitiva.</p>
+            </div>
+            <span id="contadorLixeira" class="count-badge">0 itens</span>
+          </div>
+          <section id="listaLixeira" class="trash-grid" aria-live="polite"></section>
+        </section>
+
+        <section id="viewConfiguracoes" class="view-section" hidden>
+          <div class="settings-grid">
+            <article class="settings-card settings-card-wide theme-settings-card">
+              <div class="settings-icon theme-icon" aria-hidden="true">◐</div>
+              <div class="settings-content">
+                <h2>Aparência</h2>
+                <p>Escolha o tema visual do Case Tracker. A preferência fica salva neste navegador.</p>
+              </div>
+              <div class="theme-selector" role="group" aria-label="Tema da interface">
+                <button id="btnTemaClaro" class="theme-option" type="button" data-theme-option="light" aria-pressed="true">
+                  <span class="theme-option-icon" aria-hidden="true">☀</span>
+                  Claro
+                </button>
+                <button id="btnTemaEscuro" class="theme-option" type="button" data-theme-option="dark" aria-pressed="false">
+                  <span class="theme-option-icon" aria-hidden="true">☾</span>
+                  Escuro
+                </button>
+              </div>
+            </article>
+            <article class="settings-card settings-card-wide">
+              <div class="settings-icon warning" aria-hidden="true">●</div>
+              <div class="settings-content">
+                <h2>Notificações</h2>
+                <p id="configStatusNotificacao">Verificando permissão do navegador...</p>
+              </div>
+              <button id="btnNotificacaoConfig" type="button" class="secondary-action">Gerenciar notificações</button>
+            </article>
+            <article class="settings-card settings-card-wide">
+              <div class="settings-icon blue" aria-hidden="true">BG</div>
+              <div class="settings-content">
+                <h2>Agente em segundo plano</h2>
+                <p id="statusAgenteSegundoPlano">Verificando o processo local...</p>
+              </div>
+              <button id="btnTestarAgente" type="button" class="secondary-action">Enviar alerta de teste</button>
+            </article>
+            <article class="settings-card settings-card-wide">
+              <div class="settings-icon neutral" aria-hidden="true">MB</div>
+              <div class="settings-content">
+                <h2>Armazenamento local</h2>
+                <p id="statusArmazenamento">Calculando uso local...</p>
+              </div>
+              <button id="btnLimparAnexosOrfaos" type="button" class="secondary-action">Limpar anexos órfãos</button>
+            </article>
+            <article class="settings-card settings-card-wide">
+              <div class="settings-icon neutral" aria-hidden="true">i</div>
+              <div class="settings-content">
+                <h2>Diagnóstico local</h2>
+                <p id="diagnosticoTexto">carregando...</p>
+              </div>
+            </article>
+            <article class="settings-card settings-card-wide diagnostic-test-card">
+              <div class="settings-icon success" aria-hidden="true">✓</div>
+              <div class="settings-content">
+                <h2>Autoteste da instalação</h2>
+                <p>Verifique banco local, armazenamento, comunicação entre abas, servidor e recursos do navegador.</p>
+                <div id="resultadoAutoteste" class="diagnostic-results" aria-live="polite"></div>
+              </div>
+              <button id="btnAutoteste" type="button" class="secondary-action">Executar testes</button>
+            </article>
+            <article class="settings-card settings-card-wide">
+              <div class="settings-icon blue" aria-hidden="true">V</div>
+              <div class="settings-content">
+                <h2>Versão da aplicação</h2>
+                <p id="versaoAplicacao">1.9.0-RC4.7</p>
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="dlgPesquisaGlobal" class="global-search-dialog">
+    <section class="global-search-modal">
+      <header class="global-search-header">
+        <div class="search-field global-search-field">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20.7 19.3-4.2-4.2a7 7 0 1 0-1.4 1.4l4.2 4.2 1.4-1.4ZM5 10.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0Z"/></svg>
+          <input id="pesquisaGlobal" type="search" placeholder="Pesquisar cases, macros, anotações ou queries..." autocomplete="off" aria-label="Pesquisa global">
+        </div>
+        <button id="btnFecharPesquisaGlobal" class="icon-button" type="button" aria-label="Fechar pesquisa">×</button>
+      </header>
+      <div class="global-search-help"><span>Digite ao menos 2 caracteres.</span><kbd>Esc</kbd></div>
+      <div id="resultadosPesquisaGlobal" class="global-search-results" aria-live="polite"></div>
+    </section>
+  </dialog>
+
+  <dialog id="dlgCase" class="drawer-dialog">
+    <form id="formCase" class="drawer-form">
+      <input id="caseId" type="hidden">
+      <header class="drawer-header">
+        <div>
+          <p class="eyebrow">Cadastro manual</p>
+          <h2 id="tituloDialogCase">Novo case</h2>
+          <p class="drawer-subtitle">Organize os dados do protocolo e defina quando deseja ser lembrado.</p>
+          <p id="statusRascunhoCase" class="draft-status" hidden></p>
+        </div>
+        <button id="btnFecharCase" class="icon-button" type="button" aria-label="Fechar formulário">×</button>
+      </header>
+
+      <div class="drawer-body">
+        <section class="form-section">
+          <div class="form-section-heading">
+            <span class="section-number">01</span>
+            <div><h3>Informações do case</h3><p>Dados principais para identificar e classificar o atendimento.</p></div>
+          </div>
+          <div class="form-fields two-columns">
+            <label>Protocolo<input id="protocolo" required autocomplete="off" placeholder="CS..."></label>
+            <label>Prioridade<select id="prioridade" required></select></label>
+            <label class="full-field">Título<input id="titulo" required maxlength="500" placeholder="Resumo curto do atendimento"></label>
+            <label class="full-field">Situação<select id="situacao" required></select></label>
+            <label class="full-field">Resumo<textarea id="resumo" rows="3" maxlength="20000" placeholder="Contexto do case, se necessário"></textarea></label>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <div class="form-section-heading">
+            <span class="section-number">02</span>
+            <div><h3>Comunicação</h3><p>Mantenha uma resposta pronta para copiar durante o acompanhamento.</p></div>
+          </div>
+          <div class="form-fields">
+            <label>Mensagem preparada<textarea id="mensagem" rows="5" maxlength="20000" placeholder="Mensagem que será copiada para o atendimento"></textarea></label>
+            <div class="inline-actions">
+              <select id="modeloAplicar" aria-label="Aplicar macro"><option value="">Aplicar macro...</option></select>
+              <button id="btnAplicarModelo" type="button" class="secondary-action">Aplicar</button>
+              <button id="btnCopiarMensagem" type="button" class="secondary-action">Copiar mensagem</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <div class="form-section-heading">
+            <span class="section-number">03</span>
+            <div><h3>Acompanhamento</h3><p>Anotações internas que ajudam a retomar rapidamente o contexto.</p></div>
+          </div>
+          <div class="form-fields">
+            <label>Observações<textarea id="observacoes" rows="3" maxlength="20000" placeholder="Ex.: aguardando validação do desenvolvimento"></textarea></label>
+          </div>
+        </section>
+
+        <section id="comentariosCaseSection" class="form-section" hidden>
+          <div class="form-section-heading">
+            <span class="section-number">04</span>
+            <div><h3>Comentários e evidências</h3><p>Registre atualizações do case e cole ou insira imagens diretamente no comentário.</p></div>
+          </div>
+          <div class="comment-composer">
+            <label>Adicionar comentário
+              <textarea id="comentarioTexto" rows="4" maxlength="30000" placeholder="Digite uma atualização. Você também pode colar uma imagem aqui com Ctrl+V."></textarea>
+            </label>
+            <div id="comentarioArquivosPendentes" class="pending-attachments" aria-live="polite"></div>
+            <div class="inline-actions comment-actions">
+              <label class="secondary-action file-action" for="inputImagemComentario">Inserir imagem</label>
+              <input id="inputImagemComentario" type="file" accept="image/*" multiple hidden>
+              <span class="attachment-help">Imagens até 8 MB cada.</span>
+              <button id="btnAdicionarComentario" type="button" class="primary-action">Adicionar comentário</button>
+            </div>
+          </div>
+          <div id="listaComentariosCase" class="comment-timeline"></div>
+        </section>
+
+        <section class="form-section">
+          <div class="form-section-heading">
+            <span class="section-number">05</span>
+            <div><h3>Lembretes</h3><p>Adicione um ou mais horários e escolha se cada lembrete ocorre de segunda a sexta ou todos os dias.</p></div>
+          </div>
+          <div class="horario-area">
+            <div class="horario-picker">
+              <button id="btnAbrirHorarios" type="button" class="secondary-action" aria-haspopup="dialog" aria-expanded="false">+ Adicionar horário</button>
+              <div id="painelHorarios" class="painel-horarios" hidden>
+                <div class="painel-title">Adicionar lembrete</div>
+                <div class="painel-horarios-topo">
+                  <label>Horário<input id="inputNovoHorario" type="time" step="60" aria-label="Selecionar horário"></label>
+                  <button id="btnAdicionarHorario" type="button" class="primary-action">Adicionar</button>
+                </div>
+                <fieldset class="schedule-mode-fieldset">
+                  <legend class="micro-label">Dias do lembrete</legend>
+                  <div class="schedule-mode-options">
+                    <label class="schedule-mode-option"><input id="modoLembreteDiasUteis" type="radio" name="modoDiasLembrete" value="uteis" checked><span>Seg a sex</span></label>
+                    <label class="schedule-mode-option"><input id="modoLembreteTodosDias" type="radio" name="modoDiasLembrete" value="todos"><span>Todos os dias</span></label>
+                  </div>
+                </fieldset>
+                <div>
+                  <span class="micro-label">Sugestões</span>
+                  <div class="atalhos-horario" aria-label="Sugestões de horário">
+                    <button type="button" class="atalho-horario" data-horario="09:00">09:00</button>
+                    <button type="button" class="atalho-horario" data-horario="10:00">10:00</button>
+                    <button type="button" class="atalho-horario" data-horario="14:00">14:00</button>
+                    <button type="button" class="atalho-horario" data-horario="16:00">16:00</button>
+                    <button type="button" class="atalho-horario" data-horario="18:00">18:00</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="horariosSelecionados" class="horarios-selecionados"></div>
+          </div>
+        </section>
+
+        <section id="ocorrenciasCase" class="form-section historical-section"></section>
+        <section id="historicoCase" class="form-section historical-section"></section>
+      </div>
+
+      <footer class="drawer-footer">
+        <button id="btnExcluirCase" type="button" class="danger-action">Mover para lixeira</button>
+        <div class="drawer-footer-right">
+          <button id="btnCancelarCase" type="button" class="secondary-action">Cancelar</button>
+          <button id="btnSalvarCase" type="submit" class="primary-action">Salvar case</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="dlgModelos" class="modal-dialog">
+    <section class="modal-content modelos macro-editor-modal">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">Comunicação</p>
+          <h2 id="tituloDialogMacro">Nova macro</h2>
+          <p id="metaDialogMacro" class="modal-subtitle">Crie uma mensagem reutilizável para o atendimento diário.</p>
+        </div>
+        <div class="modal-header-actions">
+          <button id="btnFavoritarMacroModal" class="favorite-button favorite-button-modal" type="button" aria-pressed="false" title="Favoritar macro" aria-label="Favoritar macro"><span aria-hidden="true">☆</span><span class="favorite-button-label">Favoritar</span></button>
+          <button id="btnFecharModelos" class="icon-button" type="button" aria-label="Fechar macro">×</button>
+        </div>
+      </header>
+      <form id="formModelo" class="model-form">
+        <input id="modeloId" type="hidden">
+        <label>Nome<input id="modeloNome" required maxlength="500" placeholder="Ex.: Retorno em análise"></label>
+        <label>Conteúdo<textarea id="modeloConteudo" required rows="8" maxlength="20000" placeholder="Digite a mensagem que deseja reutilizar..."></textarea></label>
+        <div class="inline-actions macro-editor-actions">
+          <button id="btnExcluirMacroModal" type="button" class="danger-action" hidden>Mover para lixeira</button>
+          <div class="macro-editor-actions-right">
+            <button id="btnCopiarMacroModal" type="button" class="secondary-action">Copiar</button>
+            <button id="btnNovoModelo" type="button" class="secondary-action">Limpar campos</button>
+            <button type="submit" class="primary-action">Salvar macro</button>
+          </div>
+        </div>
+      </form>
+    </section>
+  </dialog>
+
+  <dialog id="dlgAnotacao" class="modal-dialog note-editor-dialog">
+    <section class="modal-content note-editor-modal">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">Anotações</p>
+          <h2 id="tituloDialogAnotacao">Nova anotação</h2>
+          <p id="metaDialogAnotacao" class="modal-subtitle">Crie uma anotação pesquisável e mantenha referências locais.</p>
+          <p id="statusRascunhoAnotacao" class="draft-status" hidden></p>
+        </div>
+        <div class="modal-header-actions">
+          <button id="btnFavoritarAnotacaoModal" class="favorite-button favorite-button-modal" type="button" aria-pressed="false" title="Favoritar anotação" aria-label="Favoritar anotação"><span aria-hidden="true">☆</span><span class="favorite-button-label">Favoritar</span></button>
+          <button id="btnFecharAnotacao" class="icon-button" type="button" aria-label="Fechar anotação">×</button>
+        </div>
+      </header>
+      <form id="formAnotacao" class="model-form">
+        <input id="anotacaoId" type="hidden">
+        <label>Título<input id="anotacaoTitulo" required maxlength="500" placeholder="Ex.: Recuperação de matrícula no bucket"></label>
+        <label>Conteúdo<textarea id="anotacaoConteudo" rows="12" maxlength="50000" placeholder="Digite sua anotação..."></textarea></label>
+        <section class="note-attachments-section">
+          <div class="note-attachments-heading">
+            <div><strong>Arquivos locais</strong><small>Imagens e PDFs ficam armazenados apenas neste navegador.</small></div>
+            <label class="secondary-action file-action" for="inputAnexosAnotacao">Adicionar arquivos</label>
+            <input id="inputAnexosAnotacao" type="file" accept="image/*,application/pdf" multiple hidden>
+          </div>
+          <div id="anexosAnotacao" class="attachment-gallery"></div>
+        </section>
+        <div class="inline-actions macro-editor-actions">
+          <button id="btnExcluirAnotacao" type="button" class="danger-action" hidden>Mover para lixeira</button>
+          <div class="macro-editor-actions-right">
+            <button id="btnCopiarAnotacao" type="button" class="secondary-action">Copiar texto</button>
+            <button type="submit" class="primary-action">Salvar anotação</button>
+          </div>
+        </div>
+      </form>
+    </section>
+  </dialog>
+
+  <dialog id="dlgRestore" class="modal-dialog compact-modal">
+    <section class="modal-content">
+      <header class="modal-header"><div><p class="eyebrow">Backup</p><h2>Restaurar dados</h2></div></header>
+      <p id="resumoRestore"></p>
+      <p class="restore-attachment-warning"><strong>Atenção:</strong> imagens e PDFs não fazem parte do JSON. A opção <em>Substituir tudo</em> também remove anexos locais atuais.</p>
+      <div class="inline-actions right-actions">
+        <button id="btnCancelarRestore" type="button" class="secondary-action">Cancelar</button>
+        <button id="btnMesclar" type="button" class="secondary-action">Mesclar</button>
+        <button id="btnSubstituir" type="button" class="danger-action">Substituir tudo</button>
+      </div>
+    </section>
+  </dialog>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>

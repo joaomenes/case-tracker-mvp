@@ -1,0 +1,42 @@
+name: Validar projeto
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validar JavaScript
+        shell: bash
+        run: |
+          set -e
+          for file in src/*.js sw.js theme-init.js; do
+            node --check "$file"
+          done
+
+      - name: Validar manifest
+        run: python -m json.tool manifest.webmanifest > /dev/null
+
+      - name: Validar sintaxe PowerShell
+        shell: pwsh
+        run: |
+          $files = @("CONFIGURAR_CASE_TRACKER.ps1", "servidor-local.ps1", "scripts/DESINSTALADOR_INTERNO.ps1")
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($file, [ref]$tokens, [ref]$errors)
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error "${file}: $($_.Message)" }
+              exit 1
+            }
+          }
