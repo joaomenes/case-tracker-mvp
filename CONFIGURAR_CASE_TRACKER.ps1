@@ -107,7 +107,7 @@ try {
         'scripts\DESINSTALADOR_INTERNO.ps1',
         'servidor-local.ps1',
         'index.html',
-        'styles-v1.9.0-RC4.7.css',
+        'styles-v1.9.0-RC4.8.css',
         'theme-init.js',
         'sw.js',
         'manifest.webmanifest',
@@ -132,7 +132,7 @@ try {
     Get-ChildItem -LiteralPath $destination -File -ErrorAction SilentlyContinue | Where-Object {
         ($_.Name -like 'app-v*.bundle.js') -or
         ($_.Name -like 'app.bundle.js') -or
-        ($_.Name -like 'styles-v*.css' -and $_.Name -ne 'styles-v1.9.0-RC4.7.css')
+        ($_.Name -like 'styles-v*.css' -and $_.Name -ne 'styles-v1.9.0-RC4.8.css')
     } | Remove-Item -Force -ErrorAction SilentlyContinue
 
     @('INICIAR_SILENCIOSO.vbs', 'INSTALAR.vbs', 'INSTALAR.ps1', 'INICIAR.bat', 'DESINSTALAR_CASE_TRACKER.ps1') | ForEach-Object {

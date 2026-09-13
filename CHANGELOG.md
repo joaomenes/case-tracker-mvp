@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.9.0-RC4.8
+
+- Otimiza a inicialização fria do servidor local, carregando o agente gráfico de notificações somente quando necessário.
+- Reduz o tempo de detecção do servidor no atalho.
+- Remove a renderização duplicada do painel durante o bootstrap.
+- Move manutenção, sincronização, Service Worker e motor de lembretes para depois do primeiro paint.
+- Adiciona indicador discreto de carregamento durante a leitura inicial dos dados.
+
 ## 1.9.0-RC4.7
 
 - Interface profissional com temas claro/escuro e botões de ações com cores sutis.

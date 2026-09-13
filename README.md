@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/versão-v1.9.0--RC4.7-2563EB?style=for-the-badge" alt="Versão v1.9.0-RC4.7">
+  <img src="https://img.shields.io/badge/versão-v1.9.0--RC4.8-2563EB?style=for-the-badge" alt="Versão v1.9.0-RC4.8">
   <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=for-the-badge&logo=windows11&logoColor=white" alt="Windows 10 e 11">
   <img src="https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?style=for-the-badge&logo=javascript&logoColor=111827" alt="JavaScript ES6+">
   <img src="https://img.shields.io/badge/PowerShell-5.1-5391FE?style=for-the-badge&logo=powershell&logoColor=white" alt="PowerShell 5.1">
@@ -271,7 +271,7 @@ case-tracker-mvp/
 ├── INSTALAR_CASE_TRACKER.vbs
 ├── manifest.webmanifest
 ├── servidor-local.ps1
-├── styles-v1.9.0-RC4.7.css
+├── styles-v1.9.0-RC4.8.css
 ├── sw.js
 └── theme-init.js
 ```

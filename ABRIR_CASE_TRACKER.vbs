@@ -9,7 +9,7 @@ Set fso = CreateObject("Scripting.FileSystemObject")
 
 base = fso.GetParentFolderName(WScript.ScriptFullName)
 serverPath = fso.BuildPath(base, "servidor-local.ps1")
-url = "http://localhost:8765/?v=1.9.0-RC4.7"
+url = "http://localhost:8765/?v=1.9.0-RC4.8"
 serverOnline = False
 
 If Not fso.FileExists(serverPath) Then
@@ -19,7 +19,7 @@ End If
 
 On Error Resume Next
 Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
-http.setTimeouts 700, 700, 700, 700
+http.setTimeouts 300, 300, 300, 300
 http.Open "GET", "http://127.0.0.1:8765/__case_tracker_ping", False
 http.Send
 If Err.Number = 0 Then

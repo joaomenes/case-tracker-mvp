@@ -173,6 +173,7 @@ const refs = {
   diagnosticoTexto: $('diagnosticoTexto'),
   versaoAplicacao: $('versaoAplicacao'),
   versaoSidebar: $('versaoSidebar'),
+  startupStatus: $('startupStatus'),
   btnEncerrarApp: $('btnEncerrarApp'),
   btnTemaClaro: $('btnTemaClaro'),
   btnTemaEscuro: $('btnTemaEscuro'),
@@ -3266,30 +3267,41 @@ function vincularEventos() {
   });
 }
 
-async function iniciar() {
-  aplicarTema(obterTemaAtual(), { persistir: false });
-  preencherSelect(refs.situacao, SITUACOES, 'Em análise');
-  preencherSelect(refs.prioridade, PRIORIDADES, 'Normal');
-  preencherSelect(refs.filtroSituacao, SITUACOES);
-  preencherSelect(refs.filtroPrioridade, PRIORIDADES);
-  refs.filtroPrioridade.append(el('option', { value: '__prioritarios__' }, 'Alta/Crítica'));
-  definirHorariosSelecionados(HORARIOS_PADRAO);
-  refs.versaoAplicacao.textContent = APP_VERSION;
-  refs.versaoSidebar.textContent = APP_VERSION;
-  vincularEventos();
+function ocultarStatusInicializacao() {
+  if (refs.startupStatus) refs.startupStatus.hidden = true;
+}
 
+function agendarInicializacaoSecundaria(tarefa) {
+  const executar = () => Promise.resolve()
+    .then(tarefa)
+    .catch((erro) => console.warn('Falha em tarefa secundária de inicialização:', erro));
+
+  // requestIdleCallback deixa o navegador pintar a interface antes de iniciar
+  // manutenção, sincronização e registro de recursos secundários.
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(executar, { timeout: 900 });
+  } else {
+    window.setTimeout(executar, 80);
+  }
+}
+
+async function inicializarServicosSecundarios() {
+  if (encerrandoAplicacao) return;
+  // Migrações/limpezas não precisam bloquear a primeira visualização do painel.
   const classificados = await classificarResolvidosLegados();
-  if (classificados > 0) console.info(`${classificados} case(s) resolvido(s) antigo(s) classificado(s) no Histórico.`);
-
   const removidos = await purgarResolvidosAntigos({ dias: 15 });
-  if (removidos > 0) console.info(`${removidos} case(s) resolvido(s) removido(s) pela retenção de 15 dias.`);
   const removidosLixeira = await purgarLixeiraAntiga({ dias: 7 });
-  if (removidosLixeira > 0) console.info(`${removidosLixeira} item(ns) removido(s) definitivamente da Lixeira.`);
 
-  await selecionarView('painel', { resetarFiltros: false });
-  await atualizarTudo();
+  if (classificados > 0 || removidos > 0 || removidosLixeira > 0) {
+    await Promise.all([renderConteudoPrincipal(), atualizarResumo(), renderFavoritosPainel()]);
+  }
+
   await sincronizarEstadoSeguro();
   await registrarServiceWorker();
+  if (encerrandoAplicacao) return;
+
+  // O motor executa um ciclo inicial para reconciliar lembretes assim que a UI
+  // já está disponível ao usuário.
   pararMotorLembretes = iniciarMotorLembretes(atualizarTudo);
 
   intervaloLimpezaAutomatica = window.setInterval(async () => {
@@ -3305,6 +3317,32 @@ async function iniciar() {
       }
     } catch (erro) { console.warn('Falha na limpeza automática:', erro); }
   }, 60 * 60 * 1000);
+}
+
+async function iniciar() {
+  aplicarTema(obterTemaAtual(), { persistir: false });
+  preencherSelect(refs.situacao, SITUACOES, 'Em análise');
+  preencherSelect(refs.prioridade, PRIORIDADES, 'Normal');
+  preencherSelect(refs.filtroSituacao, SITUACOES);
+  preencherSelect(refs.filtroPrioridade, PRIORIDADES);
+  refs.filtroPrioridade.append(el('option', { value: '__prioritarios__' }, 'Alta/Crítica'));
+  definirHorariosSelecionados(HORARIOS_PADRAO);
+  refs.versaoAplicacao.textContent = APP_VERSION;
+  refs.versaoSidebar.textContent = APP_VERSION;
+  vincularEventos();
+
+  // Primeiro paint: selecionarView já renderiza o painel e os favoritos.
+  // Evita a antiga chamada duplicada de atualizarTudo(), que repetia as leituras
+  // do IndexedDB antes de o usuário enxergar a interface.
+  await selecionarView('painel', { resetarFiltros: false });
+  await atualizarResumo();
+  atualizarIndicadorRascunhos();
+  atualizarAlertaNotificacao();
+  ocultarStatusInicializacao();
+
+  // Rotinas que não são necessárias para o primeiro paint ficam fora do caminho
+  // crítico. Elas continuam executando logo após a interface ficar disponível.
+  agendarInicializacaoSecundaria(inicializarServicosSecundarios);
 
   const match = /^#case=(.+)$/.exec(location.hash);
   if (match) await abrirCase(decodeURIComponent(match[1]));

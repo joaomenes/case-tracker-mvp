@@ -14,7 +14,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Url = "http://localhost:$Port/?v=1.9.0-RC4.7"
+$Url = "http://localhost:$Port/?v=1.9.0-RC4.8"
 $SessionToken = [Guid]::NewGuid().ToString('N')
 $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
 $running = $true
@@ -45,15 +45,12 @@ $IncompleteAttachmentBackupRetentionHours = 24
 $MaxBodyChars = 48 * 1024 * 1024
 $lastMaintenance = Get-Date # evita bloquear o primeiro ping com manutencao/backups/notificacoes
 $StateReady = Test-Path -LiteralPath $CurrentStateFile -PathType Leaf
+# O agente gráfico é carregado sob demanda. Carregar WinForms/Drawings antes de
+# abrir a porta atrasava a inicialização fria do PowerShell e, por consequência,
+# a abertura do navegador.
+$AgentInitialized = $false
 $AgentAvailable = $false
 $LastAgentNotification = $null
-try {
-    Add-Type -AssemblyName System.Windows.Forms -ErrorAction Stop
-    Add-Type -AssemblyName System.Drawing -ErrorAction Stop
-    $AgentAvailable = $true
-} catch {
-    $AgentAvailable = $false
-}
 
 @($BackupRoot, $AutoBackupDir, $ManualBackupDir, $MacroBackupDir, $AnnotationBackupDir, $AttachmentBackupDir, $DataDir) | ForEach-Object {
     if (-not (Test-Path -LiteralPath $_ -PathType Container)) {
@@ -482,7 +479,7 @@ function Initialize-AttachmentBackup($Payload) {
     New-Item -ItemType Directory -Path $folder -Force | Out-Null
     $manifest = [ordered]@{
         versao = 1
-        appVersion = '1.9.0-RC4.7'
+        appVersion = '1.9.0-RC4.8'
         backupId = $backupId
         criadoEm = (Get-Date).ToString('o')
         concluido = $false
@@ -644,8 +641,22 @@ function Test-DayAllowedForAgenda([DateTimeOffset]$Value, $Agenda) {
     return $days -contains $dayNumber
 }
 
+function Initialize-NotificationAgent {
+    if ($script:AgentInitialized) { return [bool]$script:AgentAvailable }
+    $script:AgentInitialized = $true
+    try {
+        Add-Type -AssemblyName System.Windows.Forms -ErrorAction Stop
+        Add-Type -AssemblyName System.Drawing -ErrorAction Stop
+        $script:AgentAvailable = $true
+    }
+    catch {
+        $script:AgentAvailable = $false
+    }
+    return [bool]$script:AgentAvailable
+}
+
 function Show-CaseTrackerNotification([string]$Title, [string]$Message) {
-    if (-not $AgentAvailable) { return $false }
+    if (-not (Initialize-NotificationAgent)) { return $false }
     try {
         $notify = New-Object System.Windows.Forms.NotifyIcon
         $notify.Icon = [System.Drawing.SystemIcons]::Information
@@ -666,7 +677,7 @@ function Show-CaseTrackerNotification([string]$Title, [string]$Message) {
 }
 
 function Invoke-BackgroundReminderNotifications {
-    if (-not $AgentAvailable -or -not (Test-Path -LiteralPath $CurrentStateFile -PathType Leaf)) { return }
+    if (-not (Test-Path -LiteralPath $CurrentStateFile -PathType Leaf)) { return }
     $snapshot = Read-JsonFile $CurrentStateFile
     if ($null -eq $snapshot -or $null -eq $snapshot.dados) { return }
     $cases = @($snapshot.dados.cases)
@@ -723,8 +734,9 @@ function Invoke-BackgroundReminderNotifications {
 }
 
 function Get-AgentStatusJson {
+    $available = Initialize-NotificationAgent
     return (@{
-        ativo = [bool]$AgentAvailable
+        ativo = [bool]$available
         processo = 'servidor-local.ps1'
         intervaloSegundos = 60
         snapshotDisponivel = (Test-Path -LiteralPath $CurrentStateFile -PathType Leaf)
@@ -839,7 +851,7 @@ try {
         }
 
         if (-not $listener.Pending()) {
-            Start-Sleep -Milliseconds 200
+            Start-Sleep -Milliseconds 75
             continue
         }
 
