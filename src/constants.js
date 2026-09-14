@@ -6,7 +6,7 @@
  * específicas do servidor local permanecem em `servidor-local.ps1`.
  */
 
-export const APP_VERSION = '1.9.0-RC4.8';
+export const APP_VERSION = '1.9.0-RC4.9';
 export const SCHEMA_VERSION = 4;
 export const DB_NAME = 'acompanhamento-cases-db';
 export const DB_VERSION = 4;

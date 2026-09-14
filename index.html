@@ -8,7 +8,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
   <link rel="manifest" href="./manifest.webmanifest">
   <script src="./theme-init.js"></script>
-  <link rel="stylesheet" href="./styles-v1.9.0-RC4.8.css">
+  <link rel="stylesheet" href="./styles-v1.9.0-RC4.9.css">
   <title>Acompanhamento de Cases</title>
 </head>
 <body>
@@ -79,7 +79,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 2h2v10h-2V2Zm1 20a9 9 0 0 1-6.36-15.36l1.42 1.42A7 7 0 1 0 16.94 8.06l1.42-1.42A9 9 0 0 1 12 22Z"/></svg>
           <span>Encerrar</span>
         </button>
-        <div class="sidebar-version">Versão <span id="versaoSidebar">1.9.0-RC4.8</span></div>
+        <div class="sidebar-version">Versão <span id="versaoSidebar">1.9.0-RC4.9</span></div>
       </div>
     </aside>
 
@@ -435,7 +435,7 @@
               <div class="settings-icon blue" aria-hidden="true">V</div>
               <div class="settings-content">
                 <h2>Versão da aplicação</h2>
-                <p id="versaoAplicacao">1.9.0-RC4.8</p>
+                <p id="versaoAplicacao">1.9.0-RC4.9</p>
               </div>
             </article>
           </div>
@@ -514,7 +514,7 @@
         <section id="comentariosCaseSection" class="form-section" hidden>
           <div class="form-section-heading">
             <span class="section-number">04</span>
-            <div><h3>Comentários e evidências</h3><p>Registre atualizações do case e cole ou insira imagens diretamente no comentário.</p></div>
+            <div><h3>Comentários e evidências</h3><p>Registre atualizações do case e adicione imagens ou PDFs como evidências.</p></div>
           </div>
           <div class="comment-composer">
             <label>Adicionar comentário
@@ -522,9 +522,9 @@
             </label>
             <div id="comentarioArquivosPendentes" class="pending-attachments" aria-live="polite"></div>
             <div class="inline-actions comment-actions">
-              <label class="secondary-action file-action" for="inputImagemComentario">Inserir imagem</label>
-              <input id="inputImagemComentario" type="file" accept="image/*" multiple hidden>
-              <span class="attachment-help">Imagens até 8 MB cada.</span>
+              <label class="secondary-action file-action" for="inputImagemComentario">Inserir arquivos</label>
+              <input id="inputImagemComentario" type="file" accept="image/*,application/pdf" multiple hidden>
+              <span class="attachment-help">Imagens até 8 MB e PDFs até 15 MB. Em um novo case, as evidências serão salvas junto com o cadastro.</span>
               <button id="btnAdicionarComentario" type="button" class="primary-action">Adicionar comentário</button>
             </div>
           </div>
@@ -631,7 +631,7 @@
         <label>Conteúdo<textarea id="anotacaoConteudo" rows="12" maxlength="50000" placeholder="Digite sua anotação..."></textarea></label>
         <section class="note-attachments-section">
           <div class="note-attachments-heading">
-            <div><strong>Arquivos locais</strong><small>Imagens e PDFs ficam armazenados apenas neste navegador.</small></div>
+            <div><strong>Arquivos locais</strong><small>Imagens e PDFs podem ser adicionados em anotações novas ou existentes e ficam armazenados apenas neste navegador.</small></div>
             <label class="secondary-action file-action" for="inputAnexosAnotacao">Adicionar arquivos</label>
             <input id="inputAnexosAnotacao" type="file" accept="image/*,application/pdf" multiple hidden>
           </div>

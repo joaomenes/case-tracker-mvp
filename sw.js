@@ -5,10 +5,10 @@
  * Rotas internas iniciadas por `/__` nunca são interceptadas pelo cache.
  */
 
-const CACHE_NAME = 'acompanhamento-cases-v1-9-0-rc4-8';
+const CACHE_NAME = 'acompanhamento-cases-v1-9-0-rc4-9';
 const STATIC_ASSETS = [
   './index.html',
-  './styles-v1.9.0-RC4.8.css',
+  './styles-v1.9.0-RC4.9.css',
   './theme-init.js',
   './manifest.webmanifest',
   './src/app.js',

@@ -11,6 +11,7 @@ import {
   DIAS_UTEIS_PADRAO,
   ESTADOS_OCORRENCIA,
   HORARIOS_PADRAO,
+  LIMITES_ANEXOS,
   PRIORIDADES,
   SITUACOES,
 } from './constants.js';
@@ -70,7 +71,7 @@ import {
   sincronizarEstadoComServidor,
 } from './backup.js';
 import { iniciarMotorLembretes, solicitarPermissaoNotificacao } from './notifications.js';
-import { adicionarAnexos, excluirAnexo, limparAnexosOrfaos, listarAnexos } from './attachments.js';
+import { adicionarAnexos, excluirAnexo, limparAnexosOrfaos, listarAnexos, validarArquivoAnexo } from './attachments.js';
 import { datetimeLocalNoFusoParaIso, fimDoDiaNoFuso, formatarDataHora, inicioDoDiaNoFuso } from './time.js';
 
 // -----------------------------------------------------------------------------
@@ -305,6 +306,7 @@ const DIAS_TODOS = Object.freeze([0, 1, 2, 3, 4, 5, 6]);
 let horariosSelecionadosState = HORARIOS_PADRAO.map((horario) => ({ horario, diasSemana: [...DIAS_UTEIS_PADRAO] }));
 let viewAtual = 'painel';
 let comentarioArquivosPendentesState = [];
+let comentariosPendentesNovoCaseState = [];
 let anotacaoArquivosPendentesState = [];
 let macroFavoritaState = false;
 let anotacaoFavoritaState = false;
@@ -319,6 +321,8 @@ let timerRascunhoCase = null;
 let timerRascunhoAnotacao = null;
 let versaoCaseAberto = null;
 let versaoAnotacaoAberta = null;
+let baselineRascunhoCase = null;
+let baselineRascunhoAnotacao = null;
 let caseAlteradoOutraAba = false;
 let anotacaoAlteradaOutraAba = false;
 const canalEntidades = 'BroadcastChannel' in window ? new BroadcastChannel(CANAL_SYNC) : null;
@@ -614,12 +618,12 @@ function rascunhoAnotacaoTemConteudo(rascunho) {
   return [rascunho?.titulo, rascunho?.conteudo].some((campo) => String(campo ?? '').trim());
 }
 
-function salvarRascunhoCaseAgora() {
-  if (suspenderRascunhos || !refs.dlgCase?.open) return;
-  const id = refs.caseId.value || 'novo';
-  const rascunho = {
-    salvoEm: new Date().toISOString(),
-    id: refs.caseId.value || null,
+/**
+ * Captura somente os campos editáveis que participam do rascunho do case.
+ * O snapshot-base evita criar rascunhos apenas por abrir e fechar um case sem alterações.
+ */
+function estadoEditavelCase() {
+  return {
     protocolo: refs.protocolo.value,
     titulo: refs.titulo.value,
     situacao: refs.situacao.value,
@@ -628,7 +632,62 @@ function salvarRascunhoCaseAgora() {
     mensagem: refs.mensagem.value,
     observacoes: refs.observacoes.value,
     agendasLembretes: horariosSelecionadosState.map((item) => ({ horario: item.horario, diasSemana: [...item.diasSemana] })),
-    horarios: horariosSelecionadosState.map((item) => item.horario),
+  };
+}
+
+function estadoEditavelAnotacao() {
+  return {
+    titulo: refs.anotacaoTitulo.value,
+    conteudo: refs.anotacaoConteudo.value,
+    favorita: anotacaoFavoritaState,
+  };
+}
+
+function serializarComparacao(valor) {
+  return JSON.stringify(valor);
+}
+
+function atualizarBaselineCase() {
+  baselineRascunhoCase = serializarComparacao(estadoEditavelCase());
+}
+
+function atualizarBaselineAnotacao() {
+  baselineRascunhoAnotacao = serializarComparacao(estadoEditavelAnotacao());
+}
+
+function atualizarFavoritaNoBaselineAnotacao() {
+  let base;
+  try { base = baselineRascunhoAnotacao ? JSON.parse(baselineRascunhoAnotacao) : estadoEditavelAnotacao(); }
+  catch { base = estadoEditavelAnotacao(); }
+  base.favorita = anotacaoFavoritaState;
+  baselineRascunhoAnotacao = serializarComparacao(base);
+}
+
+function caseTemAlteracaoParaRascunho() {
+  return baselineRascunhoCase === null || serializarComparacao(estadoEditavelCase()) !== baselineRascunhoCase;
+}
+
+function anotacaoTemAlteracaoParaRascunho() {
+  return baselineRascunhoAnotacao === null || serializarComparacao(estadoEditavelAnotacao()) !== baselineRascunhoAnotacao;
+}
+
+function salvarRascunhoCaseAgora() {
+  if (suspenderRascunhos || !refs.dlgCase?.open) return;
+  const id = refs.caseId.value || 'novo';
+
+  // Um case apenas consultado não deve criar um rascunho novo ao fechar o modal.
+  if (!caseTemAlteracaoParaRascunho()) {
+    removerRascunho(CHAVE_RASCUNHO_CASE, id);
+    mostrarStatusRascunho(refs.statusRascunhoCase, '');
+    return;
+  }
+
+  const editavel = estadoEditavelCase();
+  const rascunho = {
+    salvoEm: new Date().toISOString(),
+    id: refs.caseId.value || null,
+    ...editavel,
+    horarios: editavel.agendasLembretes.map((item) => item.horario),
   };
   try {
     if (!rascunhoCaseTemConteudo(rascunho)) {
@@ -666,27 +725,39 @@ function aplicarRascunhoCase(rascunho) {
 }
 
 function recuperarRascunhoCaseSeNecessario(id, atualizadoEmBanco = null) {
-  const rascunho = lerRascunho(CHAVE_RASCUNHO_CASE, id || 'novo');
-  if (id === 'novo') return;
-  if (!rascunho?.salvoEm) return;
+  const chaveId = id || 'novo';
+  const rascunho = lerRascunho(CHAVE_RASCUNHO_CASE, chaveId);
+  if (id === 'novo' || !rascunho?.salvoEm) return;
   const maisNovo = !atualizadoEmBanco || Date.parse(rascunho.salvoEm) > Date.parse(atualizadoEmBanco);
   if (!maisNovo) {
-    removerRascunho(CHAVE_RASCUNHO_CASE, id || 'novo');
+    removerRascunho(CHAVE_RASCUNHO_CASE, chaveId);
     return;
   }
-  if (confirm('Existe um rascunho mais recente deste case. Deseja recuperá-lo?')) aplicarRascunhoCase(rascunho);
-  else removerRascunho(CHAVE_RASCUNHO_CASE, id || 'novo');
+
+  if (confirm('Existe um rascunho mais recente deste case. Deseja recuperá-lo?')) {
+    aplicarRascunhoCase(rascunho);
+  } else {
+    // Cancelar a recuperação descarta definitivamente esse rascunho. Como o
+    // snapshot-base representa o case salvo, fechar sem editar não o recriará.
+    removerRascunho(CHAVE_RASCUNHO_CASE, chaveId);
+    mostrarStatusRascunho(refs.statusRascunhoCase, '');
+  }
 }
 
 function salvarRascunhoAnotacaoAgora() {
   if (suspenderRascunhos || !refs.dlgAnotacao?.open) return;
   const id = refs.anotacaoId.value || 'novo';
+
+  if (!anotacaoTemAlteracaoParaRascunho()) {
+    removerRascunho(CHAVE_RASCUNHO_ANOTACAO, id);
+    mostrarStatusRascunho(refs.statusRascunhoAnotacao, '');
+    return;
+  }
+
   const rascunho = {
     salvoEm: new Date().toISOString(),
     id: refs.anotacaoId.value || null,
-    titulo: refs.anotacaoTitulo.value,
-    conteudo: refs.anotacaoConteudo.value,
-    favorita: anotacaoFavoritaState,
+    ...estadoEditavelAnotacao(),
   };
   try {
     if (!rascunhoAnotacaoTemConteudo(rascunho)) {
@@ -719,16 +790,20 @@ function aplicarRascunhoAnotacao(rascunho) {
 }
 
 function recuperarRascunhoAnotacaoSeNecessario(id, atualizadoEmBanco = null) {
-  const rascunho = lerRascunho(CHAVE_RASCUNHO_ANOTACAO, id || 'novo');
-  if (id === 'novo') return;
-  if (!rascunho?.salvoEm) return;
+  const chaveId = id || 'novo';
+  const rascunho = lerRascunho(CHAVE_RASCUNHO_ANOTACAO, chaveId);
+  if (id === 'novo' || !rascunho?.salvoEm) return;
   const maisNovo = !atualizadoEmBanco || Date.parse(rascunho.salvoEm) > Date.parse(atualizadoEmBanco);
   if (!maisNovo) {
-    removerRascunho(CHAVE_RASCUNHO_ANOTACAO, id || 'novo');
+    removerRascunho(CHAVE_RASCUNHO_ANOTACAO, chaveId);
     return;
   }
-  if (confirm('Existe um rascunho mais recente desta anotação. Deseja recuperá-lo?')) aplicarRascunhoAnotacao(rascunho);
-  else removerRascunho(CHAVE_RASCUNHO_ANOTACAO, id || 'novo');
+  if (confirm('Existe um rascunho mais recente desta anotação. Deseja recuperá-lo?')) {
+    aplicarRascunhoAnotacao(rascunho);
+  } else {
+    removerRascunho(CHAVE_RASCUNHO_ANOTACAO, chaveId);
+    mostrarStatusRascunho(refs.statusRascunhoAnotacao, '');
+  }
 }
 
 function notificarAlteracaoEntidade(tipo, id, atualizadoEm = new Date().toISOString()) {
@@ -952,12 +1027,14 @@ function limparFormularioCase() {
   refs.historicoCase.replaceChildren();
   refs.ocorrenciasCase.hidden = true;
   refs.historicoCase.hidden = true;
-  refs.comentariosCaseSection.hidden = true;
+  refs.comentariosCaseSection.hidden = false;
   refs.listaComentariosCase.replaceChildren();
   refs.comentarioTexto.value = '';
   refs.inputImagemComentario.value = '';
   comentarioArquivosPendentesState = [];
+  comentariosPendentesNovoCaseState = [];
   renderPendentesComentario();
+  renderComentariosCase(null);
   limparUrlsTemporarias();
   $('btnExcluirCase').hidden = true;
   $('tituloDialogCase').textContent = 'Novo case';
@@ -965,6 +1042,7 @@ function limparFormularioCase() {
   versaoCaseAberto = null;
   caseAlteradoOutraAba = false;
   mostrarStatusRascunho(refs.statusRascunhoCase, '');
+  atualizarBaselineCase();
   suspenderRascunhos = false;
 }
 
@@ -1071,7 +1149,9 @@ async function carregarCaseNoDialog(caseId) {
   definirHorariosSelecionados(completo.agendas.filter((a) => a.ativa).map((a) => ({ horario: a.horario, diasSemana: a.diasSemana })));
   versaoCaseAberto = c.atualizadoEm ?? null;
   caseAlteradoOutraAba = false;
+  comentariosPendentesNovoCaseState = [];
   mostrarStatusRascunho(refs.statusRascunhoCase, '');
+  atualizarBaselineCase();
   suspenderRascunhos = false;
   recuperarRascunhoCaseSeNecessario(c.id, c.atualizadoEm);
   $('tituloDialogCase').textContent = `Case ${c.protocolo}`;
@@ -1758,14 +1838,37 @@ function limparUrlsTemporarias() {
 }
 
 function nomeSeguroArquivo(file) {
-  return String(file?.name ?? `imagem-${Date.now()}.png`).slice(0, 180);
+  const tipo = String(file?.type ?? '').toLowerCase();
+  const extensao = tipo === 'application/pdf' ? 'pdf' : 'png';
+  return String(file?.name ?? `arquivo-${Date.now()}.${extensao}`).slice(0, 180);
 }
 
 function normalizarArquivosClipboard(files) {
   return Array.from(files ?? []).map((file) => {
     if (file.name) return file;
-    return new File([file], `imagem-colada-${Date.now()}.png`, { type: file.type || 'image/png' });
+    const tipo = String(file.type || 'image/png').toLowerCase();
+    const extensao = tipo === 'application/pdf' ? 'pdf' : 'png';
+    return new File([file], `arquivo-colado-${Date.now()}.${extensao}`, { type: tipo });
   });
+}
+
+/**
+ * Valida arquivos antes de mantê-los apenas em memória. Isso evita descobrir um
+ * PDF/imagem inválido somente depois de o usuário salvar um case ou anotação.
+ */
+function prepararArquivosPendentes(atuais, files, { aceitarPdf = true } = {}) {
+  const novos = normalizarArquivosClipboard(files);
+  if (!novos.length) return [];
+  for (const file of novos) validarArquivoAnexo(file, { aceitarPdf });
+
+  if (atuais.length + novos.length > LIMITES_ANEXOS.quantidadePorRegistro) {
+    throw new Error(`Limite de ${LIMITES_ANEXOS.quantidadePorRegistro} anexos por registro excedido.`);
+  }
+  const total = [...atuais, ...novos].reduce((soma, file) => soma + Number(file.size ?? 0), 0);
+  if (total > LIMITES_ANEXOS.totalPorRegistroBytes) {
+    throw new Error('Os anexos deste registro excedem o limite total de 25 MB.');
+  }
+  return novos;
 }
 
 function renderPendentesComentario() {
@@ -1776,7 +1879,7 @@ function renderPendentesComentario() {
         el('span', {}, `${nomeSeguroArquivo(file)} • ${formatarTamanhoArquivo(file.size)}`),
         el('button', {
           type: 'button',
-          title: 'Remover imagem',
+          title: 'Remover arquivo',
           'aria-label': `Remover ${nomeSeguroArquivo(file)}`,
           onclick: () => {
             comentarioArquivosPendentesState.splice(indice, 1);
@@ -1788,11 +1891,12 @@ function renderPendentesComentario() {
   }
 }
 
-function adicionarImagensPendentesComentario(files) {
-  const imagens = normalizarArquivosClipboard(files).filter((file) => String(file.type).startsWith('image/'));
-  if (!imagens.length) return;
-  comentarioArquivosPendentesState.push(...imagens);
+function adicionarArquivosPendentesComentario(files) {
+  const novos = prepararArquivosPendentes(comentarioArquivosPendentesState, files, { aceitarPdf: true });
+  if (!novos.length) return 0;
+  comentarioArquivosPendentesState.push(...novos);
   renderPendentesComentario();
+  return novos.length;
 }
 
 function criarCardAnexo(anexo, { removivel = true, aoRemover = null } = {}) {
@@ -1828,11 +1932,56 @@ function criarCardAnexo(anexo, { removivel = true, aoRemover = null } = {}) {
   );
 }
 
+function criarCardComentarioPendente(item) {
+  const arquivos = item.arquivos ?? [];
+  return el('article', { className: 'comment-item comment-item-pending' },
+    el('div', { className: 'comment-item-header' },
+      el('span', {}, 'Pendente — será salvo junto com o case'),
+      el('span', {}, `${arquivos.length} ${arquivos.length === 1 ? 'arquivo' : 'arquivos'}`),
+    ),
+    item.texto ? el('div', { className: 'comment-item-text' }, item.texto) : null,
+    arquivos.length
+      ? el('div', { className: 'pending-attachments staged-comment-files' },
+        ...arquivos.map((file) => el('span', { className: 'pending-attachment' }, `${nomeSeguroArquivo(file)} • ${formatarTamanhoArquivo(file.size)}`)),
+      )
+      : null,
+    el('div', { className: 'comment-item-actions' },
+      el('button', {
+        type: 'button',
+        className: 'danger-action compact-action',
+        onclick: () => {
+          comentariosPendentesNovoCaseState = comentariosPendentesNovoCaseState.filter((pendente) => pendente.id !== item.id);
+          const caseIdAtual = refs.caseId.value || null;
+          renderComentariosCase(caseIdAtual).catch((e) => toast(e.message, true));
+        },
+      }, 'Remover'),
+    ),
+  );
+}
+
+function renderComentariosPendentesNovoCase() {
+  refs.listaComentariosCase.replaceChildren();
+  if (!comentariosPendentesNovoCaseState.length) {
+    refs.listaComentariosCase.append(
+      el('p', { className: 'muted-empty' }, 'Você pode preparar comentários, imagens e PDFs agora. Eles serão vinculados quando o case for salvo.'),
+    );
+    return;
+  }
+  for (const item of comentariosPendentesNovoCaseState) {
+    refs.listaComentariosCase.append(criarCardComentarioPendente(item));
+  }
+}
+
 async function renderComentariosCase(caseId) {
-  if (!refs.listaComentariosCase || !caseId) return;
+  if (!refs.listaComentariosCase) return;
+  if (!caseId) {
+    renderComentariosPendentesNovoCase();
+    return;
+  }
+
   const comentarios = await listarComentariosCase(caseId);
   refs.listaComentariosCase.replaceChildren();
-  if (!comentarios.length) {
+  if (!comentarios.length && !comentariosPendentesNovoCaseState.length) {
     refs.listaComentariosCase.append(el('p', { className: 'muted-empty' }, 'Nenhum comentário registrado neste case.'));
     return;
   }
@@ -1846,7 +1995,7 @@ async function renderComentariosCase(caseId) {
       el('article', { className: 'comment-item' },
         el('div', { className: 'comment-item-header' },
           el('span', {}, formatarDataHora(comentario.criadoEm)),
-          el('span', {}, anexos.length ? `${anexos.length} imagem(ns)` : 'Sem imagens'),
+          el('span', {}, anexos.length ? `${anexos.length} ${anexos.length === 1 ? 'arquivo' : 'arquivos'}` : 'Sem arquivos'),
         ),
         comentario.texto ? el('div', { className: 'comment-item-text' }, comentario.texto) : null,
         anexos.length ? galeria : null,
@@ -1855,7 +2004,7 @@ async function renderComentariosCase(caseId) {
             type: 'button',
             className: 'danger-action compact-action',
             onclick: async () => {
-              if (!confirm('Excluir este comentário e suas imagens?')) return;
+              if (!confirm('Excluir este comentário e seus arquivos?')) return;
               await excluirComentarioCase(comentario.id);
               await renderComentariosCase(caseId);
               await sincronizarEstadoSeguro();
@@ -1866,26 +2015,72 @@ async function renderComentariosCase(caseId) {
       ),
     );
   }
+
+  if (comentariosPendentesNovoCaseState.length) {
+    for (const item of comentariosPendentesNovoCaseState) refs.listaComentariosCase.append(criarCardComentarioPendente(item));
+  }
+}
+
+function limparCompositorComentario() {
+  refs.comentarioTexto.value = '';
+  refs.inputImagemComentario.value = '';
+  comentarioArquivosPendentesState = [];
+  renderPendentesComentario();
+}
+
+function adicionarComentarioPendenteNovoCase({ silencioso = false } = {}) {
+  const texto = refs.comentarioTexto.value.trim();
+  if (!texto && !comentarioArquivosPendentesState.length) return false;
+  comentariosPendentesNovoCaseState.push({
+    id: crypto.randomUUID(),
+    texto,
+    arquivos: [...comentarioArquivosPendentesState],
+    criadoEm: new Date().toISOString(),
+  });
+  limparCompositorComentario();
+  renderComentariosPendentesNovoCase();
+  if (!silencioso) toast('Comentário/evidência preparado. Será salvo junto com o case.');
+  return true;
+}
+
+async function persistirComentariosPendentesNovoCase(caseId) {
+  while (comentariosPendentesNovoCaseState.length) {
+    const item = comentariosPendentesNovoCaseState[0];
+    const comentarioId = await adicionarComentarioCase({ caseId, texto: item.texto });
+    try {
+      if (item.arquivos?.length) {
+        await adicionarAnexos('caseComment', comentarioId, item.arquivos, { aceitarPdf: true });
+      }
+    } catch (erro) {
+      await excluirComentarioCase(comentarioId);
+      throw erro;
+    }
+    comentariosPendentesNovoCaseState.shift();
+  }
 }
 
 async function salvarNovoComentarioCase() {
   const caseId = refs.caseId.value;
-  if (!caseId) throw new Error('Salve o case antes de adicionar comentários.');
   const texto = refs.comentarioTexto.value.trim();
-  if (!texto && !comentarioArquivosPendentesState.length) throw new Error('Digite um comentário ou adicione uma imagem.');
+  if (!texto && !comentarioArquivosPendentesState.length) {
+    throw new Error('Digite um comentário ou adicione uma imagem/PDF.');
+  }
+
+  if (!caseId) {
+    adicionarComentarioPendenteNovoCase();
+    return;
+  }
+
   const comentarioId = await adicionarComentarioCase({ caseId, texto });
   try {
     if (comentarioArquivosPendentesState.length) {
-      await adicionarAnexos('caseComment', comentarioId, comentarioArquivosPendentesState, { aceitarPdf: false });
+      await adicionarAnexos('caseComment', comentarioId, comentarioArquivosPendentesState, { aceitarPdf: true });
     }
   } catch (erro) {
     await excluirComentarioCase(comentarioId);
     throw erro;
   }
-  refs.comentarioTexto.value = '';
-  refs.inputImagemComentario.value = '';
-  comentarioArquivosPendentesState = [];
-  renderPendentesComentario();
+  limparCompositorComentario();
   limparUrlsTemporarias();
   await renderComentariosCase(caseId);
   await sincronizarEstadoSeguro();
@@ -1911,6 +2106,7 @@ function limparFormularioAnotacao() {
   versaoAnotacaoAberta = null;
   anotacaoAlteradaOutraAba = false;
   mostrarStatusRascunho(refs.statusRascunhoAnotacao, '');
+  atualizarBaselineAnotacao();
   suspenderRascunhos = false;
 }
 
@@ -1964,6 +2160,7 @@ async function abrirAnotacaoExistente(id) {
   versaoAnotacaoAberta = nota.atualizadoEm ?? null;
   anotacaoAlteradaOutraAba = false;
   mostrarStatusRascunho(refs.statusRascunhoAnotacao, '');
+  atualizarBaselineAnotacao();
   suspenderRascunhos = false;
   await renderAnexosAnotacao(nota.id);
   refs.dlgAnotacao.showModal();
@@ -2024,7 +2221,7 @@ async function renderAnotacoes() {
             el('span', { className: 'note-card-date' }, `Atualizada em ${formatarDataHora(nota.atualizadoEm)}`),
           ),
         ),
-        el('div', { className: 'note-card-preview' }, preview ? (preview.length > 260 ? `${preview.slice(0, 260)}…` : preview) : 'Sem conteúdo de texto.'),
+        el('div', { className: 'note-card-preview' }, preview ? (preview.length > 180 ? `${preview.slice(0, 180)}…` : preview) : 'Sem conteúdo de texto.'),
         el('div', { className: 'note-card-footer' },
           el('span', { className: 'note-files-count' }, `${anexos.length} arquivo(s) local(is)`),
           el('div', { className: 'note-card-actions' },
@@ -2882,19 +3079,23 @@ function vincularEventos() {
   refs.btnFavoritarAnotacaoModal?.addEventListener('click', async () => {
     anotacaoFavoritaState = !anotacaoFavoritaState;
     atualizarBotaoFavorito(refs.btnFavoritarAnotacaoModal, anotacaoFavoritaState, 'anotação');
-    agendarRascunhoAnotacao();
     const id = refs.anotacaoId.value;
-    if (id) {
-      try {
-        const atualizada = await definirAnotacaoFavorita(id, anotacaoFavoritaState);
-        versaoAnotacaoAberta = atualizada.atualizadoEm ?? versaoAnotacaoAberta;
-        notificarAlteracaoEntidade('anotacao', id, versaoAnotacaoAberta);
-        await renderAnotacoes();
-        await renderFavoritosPainel();
-        await sincronizarEstadoSeguro();
-        toast(anotacaoFavoritaState ? 'Anotação adicionada aos favoritos.' : 'Anotação removida dos favoritos.');
-      } catch (e) { toast(e.message, true); }
+    if (!id) {
+      agendarRascunhoAnotacao();
+      return;
     }
+    try {
+      const atualizada = await definirAnotacaoFavorita(id, anotacaoFavoritaState);
+      versaoAnotacaoAberta = atualizada.atualizadoEm ?? versaoAnotacaoAberta;
+      atualizarFavoritaNoBaselineAnotacao();
+      if (anotacaoTemAlteracaoParaRascunho()) agendarRascunhoAnotacao();
+      else removerRascunho(CHAVE_RASCUNHO_ANOTACAO, id);
+      notificarAlteracaoEntidade('anotacao', id, versaoAnotacaoAberta);
+      await renderAnotacoes();
+      await renderFavoritosPainel();
+      await sincronizarEstadoSeguro();
+      toast(anotacaoFavoritaState ? 'Anotação adicionada aos favoritos.' : 'Anotação removida dos favoritos.');
+    } catch (e) { toast(e.message, true); }
   });
   refs.inputAnexosAnotacao?.addEventListener('change', async () => {
     try {
@@ -2906,23 +3107,30 @@ function vincularEventos() {
         await renderAnexosAnotacao(id);
         toast('Arquivo(s) adicionado(s) à anotação.');
       } else {
-        anotacaoArquivosPendentesState.push(...files);
+        const novos = prepararArquivosPendentes(anotacaoArquivosPendentesState, files, { aceitarPdf: true });
+        anotacaoArquivosPendentesState.push(...novos);
         await renderAnexosAnotacao(null);
       }
     } catch (e) { toast(e.message, true); }
   });
   refs.anotacaoConteudo?.addEventListener('paste', (ev) => {
-    const imagens = Array.from(ev.clipboardData?.files ?? []).filter((file) => String(file.type).startsWith('image/'));
-    if (!imagens.length) return;
+    const arquivos = Array.from(ev.clipboardData?.files ?? []).filter((file) => {
+      const tipo = String(file.type ?? '').toLowerCase();
+      return tipo.startsWith('image/') || tipo === 'application/pdf';
+    });
+    if (!arquivos.length) return;
     const id = refs.anotacaoId.value;
     if (id) {
-      adicionarAnexos('note', id, normalizarArquivosClipboard(imagens), { aceitarPdf: true })
+      adicionarAnexos('note', id, normalizarArquivosClipboard(arquivos), { aceitarPdf: true })
         .then(() => renderAnexosAnotacao(id))
-        .then(() => toast('Imagem colada na anotação.'))
+        .then(() => toast('Arquivo colado na anotação.'))
         .catch((e) => toast(e.message, true));
     } else {
-      anotacaoArquivosPendentesState.push(...normalizarArquivosClipboard(imagens));
-      renderAnexosAnotacao(null);
+      try {
+        const novos = prepararArquivosPendentes(anotacaoArquivosPendentesState, arquivos, { aceitarPdf: true });
+        anotacaoArquivosPendentesState.push(...novos);
+        renderAnexosAnotacao(null);
+      } catch (e) { toast(e.message, true); }
     }
   });
   refs.formAnotacao?.addEventListener('submit', async (ev) => {
@@ -3006,16 +3214,21 @@ function vincularEventos() {
 
   refs.inputImagemComentario?.addEventListener('change', () => {
     try {
-      adicionarImagensPendentesComentario(refs.inputImagemComentario.files);
+      const quantidade = adicionarArquivosPendentesComentario(refs.inputImagemComentario.files);
       refs.inputImagemComentario.value = '';
+      if (quantidade) toast(`${quantidade} arquivo(s) preparado(s) para o comentário.`);
     } catch (e) { toast(e.message, true); }
   });
   refs.comentarioTexto?.addEventListener('paste', (ev) => {
-    const imagens = Array.from(ev.clipboardData?.files ?? []).filter((file) => String(file.type).startsWith('image/'));
-    if (imagens.length) {
-      adicionarImagensPendentesComentario(imagens);
-      toast(`${imagens.length} imagem(ns) adicionada(s) ao comentário.`);
-    }
+    const arquivos = Array.from(ev.clipboardData?.files ?? []).filter((file) => {
+      const tipo = String(file.type ?? '').toLowerCase();
+      return tipo.startsWith('image/') || tipo === 'application/pdf';
+    });
+    if (!arquivos.length) return;
+    try {
+      const quantidade = adicionarArquivosPendentesComentario(arquivos);
+      if (quantidade) toast(`${quantidade} arquivo(s) colado(s) no comentário.`);
+    } catch (e) { toast(e.message, true); }
   });
   refs.btnAdicionarComentario?.addEventListener('click', () => salvarNovoComentarioCase().catch((e) => toast(e.message, true)));
 
@@ -3029,22 +3242,43 @@ function vincularEventos() {
     try {
       const caseId = refs.caseId.value || null;
       if (caseId && !(await verificarConflitoCaseAntesSalvar(caseId))) return;
+
+      // No cadastro, o usuário pode preparar evidências antes de existir um ID de case.
+      // Se houver algo ainda no compositor, ele entra automaticamente na fila pendente.
+      if (!caseId) adicionarComentarioPendenteNovoCase({ silencioso: true });
+
       const dados = dadosCaseDoFormulario();
       const agendas = await agendasDoFormulario(caseId);
       let salvoId = caseId;
       let atualizado = null;
       if (!caseId) {
         salvoId = await criarCase({ ...dados, agendas });
+        refs.caseId.value = salvoId;
         const completo = await obterCaseCompleto(salvoId);
         atualizado = completo?.case ?? null;
-        removerRascunho(CHAVE_RASCUNHO_CASE, 'novo');
-        toast('Case cadastrado com sucesso.');
       } else {
         atualizado = await editarCase(caseId, dados);
         await substituirAgendas(caseId, agendas);
-        removerRascunho(CHAVE_RASCUNHO_CASE, caseId);
-        toast('Case atualizado com sucesso.');
       }
+
+      try {
+        if (comentariosPendentesNovoCaseState.length) {
+          await persistirComentariosPendentesNovoCase(salvoId);
+        }
+      } catch (erroEvidencia) {
+        // O case já existe. Mantemos o modal associado ao ID salvo para que uma
+        // nova tentativa não crie protocolo duplicado nem perca evidências pendentes.
+        $('tituloDialogCase').textContent = `Case ${dados.protocolo.trim().toUpperCase()}`;
+        $('btnExcluirCase').hidden = false;
+        versaoCaseAberto = atualizado?.atualizadoEm ?? versaoCaseAberto;
+        atualizarBaselineCase();
+        await renderComentariosCase(salvoId);
+        throw new Error(`O case foi salvo, mas nem todas as evidências puderam ser gravadas: ${erroEvidencia.message}`);
+      }
+
+      removerRascunho(CHAVE_RASCUNHO_CASE, caseId || 'novo');
+      atualizarBaselineCase();
+      toast(caseId ? 'Case atualizado com sucesso.' : 'Case cadastrado com sucesso.');
       notificarAlteracaoEntidade('case', salvoId, atualizado?.atualizadoEm);
       refs.dlgCase.close();
       await atualizarTudo();

@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.9.0-RC4.9
+
+- Evita recriar rascunho ao apenas abrir e fechar um case/anotação sem alterações.
+- Ao recusar a recuperação de um rascunho, ele é descartado e não volta a ser oferecido sem novas edições.
+- Permite preparar comentários e evidências em novos cases antes do primeiro salvamento.
+- Adiciona suporte a PDFs nos comentários/evidências de cases novos e existentes.
+- Mantém imagens e PDFs em anotações novas e existentes com validação antecipada dos arquivos.
+- Compacta os cards de Anotações, reduzindo espaçamento e limitando a prévia do conteúdo a poucas linhas.
+
 ## v1.9.0-RC4.8
 
 - Otimiza a inicialização fria do servidor local, carregando o agente gráfico de notificações somente quando necessário.

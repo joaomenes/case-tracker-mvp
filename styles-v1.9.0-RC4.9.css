@@ -727,16 +727,16 @@ html[data-theme="dark"] .modal-subtitle{color:#8fa4b6}
 .notes-toolbar{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:12px;margin-bottom:18px;box-shadow:0 4px 14px rgba(15,23,42,.03)}
 .notes-toolbar .search-field{flex:1;min-width:0}
 .notes-toolbar input{width:100%;min-height:42px;border:1px solid #cbd5e1;border-radius:9px;background:var(--surface);color:var(--text);padding:10px 12px 10px 38px}
-.notes-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.note-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 17px;box-shadow:0 5px 18px rgba(15,23,42,.045);display:grid;gap:12px;min-width:0}
+.notes-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+.note-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:13px 14px;box-shadow:0 5px 18px rgba(15,23,42,.045);display:grid;gap:8px;min-width:0}
 .note-card:hover{border-color:#cbd5e1;box-shadow:0 10px 26px rgba(15,23,42,.075)}
 .note-card-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .note-card-title{margin:0;font-size:15px;line-height:1.35;color:var(--text)}
 .note-card-date{color:var(--muted);font-size:12px;white-space:nowrap}
-.note-card-preview{color:#475569;background:var(--surface-soft);border-radius:10px;padding:11px 12px;line-height:1.5;min-height:64px;white-space:pre-wrap;overflow-wrap:anywhere}
+.note-card-preview{color:#475569;background:var(--surface-soft);border-radius:9px;padding:8px 10px;line-height:1.42;min-height:0;max-height:68px;white-space:pre-line;overflow:hidden;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3}
 .note-tags{display:flex;gap:6px;flex-wrap:wrap}
 .note-tag{display:inline-flex;padding:4px 8px;border-radius:999px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-size:11px;font-weight:700}
-.note-card-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid var(--border);padding-top:12px}
+.note-card-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--border);padding-top:8px}
 .note-files-count{color:var(--muted);font-size:12px}
 .notes-backup-info{margin-top:18px}
 
@@ -823,7 +823,7 @@ html[data-theme="dark"] .macro-library-card.is-favorite,html[data-theme="dark"] 
 .macro-toolbar .count-badge{flex:0 0 auto}
 @media(max-width:700px){.macro-toolbar{align-items:stretch;flex-direction:column}.macro-toolbar .count-badge{align-self:flex-end}}
 
-/* v1.9.0-RC4.8 — produtividade, pesquisa global, lixeira, rascunhos e estabilidade */
+/* v1.9.0-RC4.9 — produtividade, pesquisa global, lixeira, rascunhos e estabilidade */
 .workspace-header{display:grid;grid-template-columns:minmax(220px,1fr) minmax(240px,420px) auto}
 .global-search-trigger{min-width:0;height:40px;border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:10px;padding:8px 11px;display:flex;align-items:center;gap:8px;justify-content:flex-start;box-shadow:0 2px 8px rgba(15,23,42,.03)}
 .global-search-trigger:hover{border-color:#94a3b8;color:var(--text);background:var(--surface-soft)}
@@ -960,3 +960,9 @@ html[data-theme="dark"] .horario-chip-dias{background:#1b2940;color:#9bb5ff}
 html[data-theme="dark"] .startup-status{background:#101a2b;border-color:#263850;color:#a8bdd6}
 html[data-theme="dark"] .startup-status-spinner{border-color:#314761;border-top-color:#6ea8ff}
 @media(prefers-reduced-motion:reduce){.startup-status-spinner{animation:none}}
+
+/* Evidências preparadas antes do primeiro salvamento do case. */
+.comment-item-pending{border-style:dashed;background:var(--surface-soft)}
+.comment-item-pending .comment-item-header span:first-child{color:#2563eb;font-weight:750}
+.staged-comment-files{margin-top:2px}
+html[data-theme="dark"] .comment-item-pending .comment-item-header span:first-child{color:#93c5fd}

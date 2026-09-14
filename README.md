@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/versão-v1.9.0--RC4.8-2563EB?style=for-the-badge" alt="Versão v1.9.0-RC4.8">
+  <img src="https://img.shields.io/badge/versão-v1.9.0--RC4.9-2563EB?style=for-the-badge" alt="Versão v1.9.0-RC4.9">
   <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=for-the-badge&logo=windows11&logoColor=white" alt="Windows 10 e 11">
   <img src="https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?style=for-the-badge&logo=javascript&logoColor=111827" alt="JavaScript ES6+">
   <img src="https://img.shields.io/badge/PowerShell-5.1-5391FE?style=for-the-badge&logo=powershell&logoColor=white" alt="PowerShell 5.1">
@@ -46,14 +46,14 @@ O **Case Tracker** é uma aplicação local para organizar e acompanhar cases de
 
 | | Recurso | Descrição |
 |---|---|---|
-| 🗂️ | **Cases** | Cadastro manual com situação, prioridade, mensagem, observações e lembretes. |
+| 🗂️ | **Cases** | Cadastro manual com situação, prioridade, mensagem, observações, lembretes e evidências em imagens/PDFs. |
 | ⏰ | **Lembretes** | Horários com recorrência **Seg a sex** ou **Todos os dias**. |
 | 🔔 | **Notificações** | Alertas pelo navegador e agente local do Windows. |
 | 🔎 | **Pesquisa global** | Busca rápida com `Ctrl+K`, filtros e favoritos. |
 | 🚀 | **GMUD** | Fila dedicada para cases aguardando mudança. |
 | 📝 | **Rascunhos** | Salvamento automático com retenção de 1 dia. |
 | 💬 | **Macros** | Mensagens reutilizáveis, pesquisáveis e com favoritos. |
-| 📎 | **Anotações** | Conteúdo pesquisável com imagens e PDFs locais. |
+| 📎 | **Anotações** | Conteúdo pesquisável com imagens e PDFs em registros novos ou existentes. |
 | 🧩 | **Queries SQL** | Biblioteca com descrição, tags, favoritos, cópia e exportação `.sql`. |
 | 🗑️ | **Lixeira** | Retenção de 7 dias antes da exclusão definitiva. |
 | 🌗 | **Tema** | Interface clara e escura. |
@@ -271,7 +271,7 @@ case-tracker-mvp/
 ├── INSTALAR_CASE_TRACKER.vbs
 ├── manifest.webmanifest
 ├── servidor-local.ps1
-├── styles-v1.9.0-RC4.8.css
+├── styles-v1.9.0-RC4.9.css
 ├── sw.js
 └── theme-init.js
 ```

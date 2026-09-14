@@ -14,7 +14,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Url = "http://localhost:$Port/?v=1.9.0-RC4.8"
+$Url = "http://localhost:$Port/?v=1.9.0-RC4.9"
 $SessionToken = [Guid]::NewGuid().ToString('N')
 $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
 $running = $true
@@ -479,7 +479,7 @@ function Initialize-AttachmentBackup($Payload) {
     New-Item -ItemType Directory -Path $folder -Force | Out-Null
     $manifest = [ordered]@{
         versao = 1
-        appVersion = '1.9.0-RC4.8'
+        appVersion = '1.9.0-RC4.9'
         backupId = $backupId
         criadoEm = (Get-Date).ToString('o')
         concluido = $false

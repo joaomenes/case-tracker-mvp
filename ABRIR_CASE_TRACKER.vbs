@@ -9,7 +9,7 @@ Set fso = CreateObject("Scripting.FileSystemObject")
 
 base = fso.GetParentFolderName(WScript.ScriptFullName)
 serverPath = fso.BuildPath(base, "servidor-local.ps1")
-url = "http://localhost:8765/?v=1.9.0-RC4.8"
+url = "http://localhost:8765/?v=1.9.0-RC4.9"
 serverOnline = False
 
 If Not fso.FileExists(serverPath) Then
