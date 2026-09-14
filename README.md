@@ -35,7 +35,7 @@
 
 ## 📌 Sobre o projeto
 
-O **Case Tracker** é uma aplicação local para organizar e acompanhar cases de sustentação, lembretes, macros, anotações e consultas SQL. O sistema roda no navegador por meio de um servidor local em `localhost:8765` e mantém os dados operacionais no **IndexedDB** do perfil do navegador.
+O **Case Tracker** é uma aplicação local para organizar e acompanhar demandas. O sistema roda no navegador por meio de um servidor local em `localhost:8765` e mantém os dados operacionais no **IndexedDB** do perfil do navegador.
 
 > [!IMPORTANT]
 > O Case Tracker funciona como ferramenta pessoal de acompanhamento e apoio operacional.
