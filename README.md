@@ -198,7 +198,7 @@ Backups\
     └── <arquivos>
 ```
 
-### Política de retenção
+### Retenção 
 
 | Tipo | Retenção |
 |---|---|
